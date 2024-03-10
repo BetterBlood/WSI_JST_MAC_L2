@@ -26,7 +26,7 @@ public class Requests {
         var dbVisualizationQuery = """
                 MATCH (sick:Person {healthstatus:'Sick'})-[sickV:VISITS]-(:Place)-[healthyV:VISITS]-(:Person {healthstatus:'Healthy'})
                 WHERE healthyV.starttime > sickV.starttime
-                  AND sickV.starttime > sick.confirmedtime
+                    AND sickV.starttime > sick.confirmedtime
                 RETURN DISTINCT sick.name AS sickName
                 """;
         try (var session = driver.session()) {
@@ -39,7 +39,7 @@ public class Requests {
         var dbVisualizationQuery = """
                 MATCH (sick:Person {healthstatus:'Sick'})-[sickV:VISITS]-(:Place)-[healthyV:VISITS]-(healthy:Person {healthstatus:'Healthy'})
                 WHERE healthyV.starttime > sickV.starttime
-                  AND sickV.starttime > sick.confirmedtime
+                    AND sickV.starttime > sick.confirmedtime
                 RETURN DISTINCT sick.name AS sickName, COUNT(healthy) AS nbHealthy
                 """;
         try (var session = driver.session()) {
@@ -49,11 +49,32 @@ public class Requests {
     }
 
     public List<Record> carelessPeople() {
-        throw new UnsupportedOperationException("Not implemented, yet");
+        var dbVisualizationQuery = """
+                match (sick : Person {healthstatus : 'Sick'})-[v:VISITS]->(p:Place)
+                Where sick.confirmedtime < v.starttime
+                with sick, count(distinct p) as nbPlaces
+                where nbPlaces > 10
+                return sick.name as sickName, nbPlaces order by nbPlaces desc
+                """;
+        try(var session = driver.session()) {
+            var result = session.run(dbVisualizationQuery);
+            return result.list();
+        }
     }
 
     public List<Record> sociallyCareful() {
-        throw new UnsupportedOperationException("Not implemented, yet");
+        var dbVisualizationQuery = """
+                match (carefully : Person {healthstatus : 'Sick'})
+                where not exists {
+                    (carefully) - [v:Visit] -> (p:Place {type : 'Bar'})
+                    where carefully.confirmedtime < v.starttime
+                }
+                return carefully.name as sickName
+                """;
+        try(var session = driver.session()) {
+            var result = session.run(dbVisualizationQuery);
+            return result.list();
+        }
     }
 
     public List<Record> peopleToInform() {
@@ -73,6 +94,15 @@ public class Requests {
     }
 
     public List<Record> sickFrom(List<String> names) {
-        throw new UnsupportedOperationException("Not implemented, yet");
+        var dbVisualizationQuery =
+                "match (sick : Person {healthstatus :'Sick'}) " +
+                        "where sick.name in $names " +
+                        "return sick.name as sickName";
+        try (var session = driver.session()) {
+            var result = session.run(dbVisualizationQuery,
+                                     Values.parameters("names", names)
+            );
+            return result.list();
+        }
     }
 }
