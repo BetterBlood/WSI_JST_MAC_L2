@@ -86,18 +86,38 @@ public class Requests {
     }
 
     public List<Record> healthyCompanionsOf(String name) {
-        throw new UnsupportedOperationException("Not implemented, yet");
+        var dbVisualizationQuery = """
+                        match (p : Person {name : $name}) - [ : VISITS *..3] - (c : Person {healthstatus : 'Healthy'})
+                        where p <> c
+                        return distinct c.name AS healthyName;
+                        """;
+        try (var session = driver.session()) {
+            var result = session.run(dbVisualizationQuery,
+                                     Values.parameters("name", name)
+            );
+            return result.list();
+        }
     }
 
     public Record topSickSite() {
-        throw new UnsupportedOperationException("Not implemented, yet");
+        var dbVisualizationQuery = """
+                match (sick : Person {healthstatus : 'Sick'}) - [v : VISITS] - (p : Place)
+                where sick.confirmedtime < v.starttime
+                return p.type as placeType, count(v) AS nbOfSickVisits
+                order by nbOfSickVisits desc
+                limit 1
+                """;
+        try (var session = driver.session()) {
+            var result = session.run(dbVisualizationQuery);
+            return result.next();
+        }
     }
 
     public List<Record> sickFrom(List<String> names) {
         var dbVisualizationQuery =
                 "match (sick : Person {healthstatus :'Sick'}) " +
-                        "where sick.name in $names " +
-                        "return sick.name as sickName";
+                "where sick.name in $names " +
+                "return sick.name as sickName";
         try (var session = driver.session()) {
             var result = session.run(dbVisualizationQuery,
                                      Values.parameters("names", names)
