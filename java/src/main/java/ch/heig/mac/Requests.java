@@ -93,6 +93,11 @@ public class Requests {
             var result = session.run(dbVisualizationQuery);
             return result.list();
         }
+        /*
+        * MATCH (healthy:Person {healthstatus:'Healthy'})
+        * WHERE healthy.risk = 'high'
+        * RETURN DISTINCT healthy.id AS highRiskId, healthy.name AS highRiskName
+        * */
     }
 
     public List<Record> setHighRisk() {
