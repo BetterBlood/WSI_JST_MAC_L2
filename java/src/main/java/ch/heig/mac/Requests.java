@@ -78,11 +78,39 @@ public class Requests {
     }
 
     public List<Record> peopleToInform() {
-        throw new UnsupportedOperationException("Not implemented, yet");
+        var dbVisualizationQuery = """
+                MATCH (sick:Person {healthstatus:'Sick'})-[sickV:VISITS]->(:Place)<-[healthyV:VISITS]-(healthy:Person {healthstatus:'Healthy'})
+                WITH sick, healthy,
+                     duration.inSeconds(
+                         apoc.coll.max([sickV.starttime, healthyV.starttime]),
+                         apoc.coll.min([sickV.endtime, healthyV.endtime])
+                     ) AS chevauchement
+                WHERE datetime() + chevauchement >= datetime() + duration({hours:2})
+                RETURN sick.name AS sickName,
+                       COLLECT(healthy.name) AS peopleToInform
+                """;
+        try(var session = driver.session()) {
+            var result = session.run(dbVisualizationQuery);
+            return result.list();
+        }
     }
 
     public List<Record> setHighRisk() {
-        throw new UnsupportedOperationException("Not implemented, yet");
+        var dbVisualizationQuery = """
+                MATCH (sick:Person {healthstatus:'Sick'})-[sickV:VISITS]->(:Place)<-[healthyV:VISITS]-(healthy:Person {healthstatus:'Healthy'})
+                WITH sick, healthy,
+                     duration.inSeconds(
+                         apoc.coll.max([sickV.starttime, healthyV.starttime]),
+                         apoc.coll.min([sickV.endtime, healthyV.endtime])
+                     ) AS chevauchement
+                WHERE datetime() + chevauchement >= datetime() + duration({hours:2})
+                SET healthy.risk = 'high'
+                RETURN DISTINCT healthy.id AS highRiskId, healthy.name AS highRiskName
+                """;
+        try(var session = driver.session()) {
+            var result = session.run(dbVisualizationQuery);
+            return result.list();
+        }
     }
 
     public List<Record> healthyCompanionsOf(String name) {
