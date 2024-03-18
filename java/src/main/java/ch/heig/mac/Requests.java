@@ -64,12 +64,10 @@ public class Requests {
 
     public List<Record> sociallyCareful() {
         var dbVisualizationQuery = """
-                match (carefully : Person {healthstatus : 'Sick'})
-                where not exists {
-                    (carefully) - [v:Visit] -> (p:Place {type : 'Bar'})
-                    where carefully.confirmedtime < v.starttime
-                }
-                return carefully.name as sickName
+                match (carefull : Person{healthstatus :'Sick'})
+                where not exists{(carefull)-[v : VISITS]->(p : Place{type:'Bar'})
+                    where carefull.confirmedtime < v.starttime}
+                return carefull.name AS sickName
                 """;
         try(var session = driver.session()) {
             var result = session.run(dbVisualizationQuery);
@@ -80,6 +78,7 @@ public class Requests {
     public List<Record> peopleToInform() {
         var dbVisualizationQuery = """
                 MATCH (sick:Person {healthstatus:'Sick'})-[sickV:VISITS]->(:Place)<-[healthyV:VISITS]-(healthy:Person {healthstatus:'Healthy'})
+                WHERE sickV.starttime > sick.confirmedtime AND healthyV.starttime > healthy.confirmedtime
                 WITH sick, healthy,
                      duration.inSeconds(
                          apoc.coll.max([sickV.starttime, healthyV.starttime]),
