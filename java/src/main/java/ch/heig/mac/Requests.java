@@ -102,6 +102,7 @@ public class Requests {
     public List<Record> setHighRisk() {
         var dbVisualizationQuery = """
                 MATCH (sick:Person {healthstatus:'Sick'})-[sickV:VISITS]->(:Place)<-[healthyV:VISITS]-(healthy:Person {healthstatus:'Healthy'})
+                WHERE sickV.starttime > sick.confirmedtime AND healthyV.starttime > healthy.confirmedtime
                 WITH sick, healthy,
                      duration.inSeconds(
                          apoc.coll.max([sickV.starttime, healthyV.starttime]),
