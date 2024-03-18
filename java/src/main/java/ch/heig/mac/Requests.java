@@ -64,10 +64,12 @@ public class Requests {
 
     public List<Record> sociallyCareful() {
         var dbVisualizationQuery = """
-                match (carefull : Person{healthstatus :'Sick'})
-                where not exists{(carefull)-[v : VISITS]->(p : Place{type:'Bar'})
-                    where carefull.confirmedtime < v.starttime}
-                return carefull.name AS sickName
+                match (carefully : Person {healthstatus : 'Sick'})
+                where not exists {
+                    (carefully) - [v : VISITS] -> (p : Place {type : 'Bar'})
+                    where carefully.confirmedtime < v.starttime
+                }
+                return carefully.name as sickName
                 """;
         try(var session = driver.session()) {
             var result = session.run(dbVisualizationQuery);
